@@ -43,25 +43,41 @@ app.post("/api/shorturl/new", function (req, res, next) {
   var urlRegex = /[-a-zA-Z0-9@:%_\+.~#?&//=]{2,256}\.[a-z]{2,4}\b(\/[-a-zA-Z0-9@:%_\+.~#?&//=]*)?/gi;
 
   if(urlRegex.test(urlToShorten) === true){
-    shortId.characters('0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ$@');
-    var shortCode = shortId.generate();
-
-    var data = new ShortUrlModel(
-      {
-        originalUrl: urlToShorten,
-        shortUrl: shortCode
+    ShortUrlModel.findOne({
+      originalUrl: urlToShorten
+    }).exec(function (err, url) {
+      if(err){
+        res.send(err);
       }
-    );
+      else{
+        if(url === null){
+          shortId.characters('0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ$@');
+          var shortCode = shortId.generate();
 
-    data.save(function (error, short) {
-      if(error){
-        return res.send('Error: ' + error);
+          var data = new ShortUrlModel(
+            {
+              originalUrl: urlToShorten,
+              shortUrl: shortCode
+            }
+          );
+
+          data.save(function (error, short) {
+            if(error){
+              return res.send('Error: ' + error);
+            }
+
+            return res.json({
+              original_url: urlToShorten,
+              short_url: shortCode
+            });
+          })
+        }
+        else{
+          res.json({
+            url: "Already exists in database"
+          })
+        }
       }
-
-      return res.json({
-        original_url: urlToShorten,
-        short_url: shortCode
-      });
     })
   }
   else {
